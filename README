@@ -15,3 +15,6 @@ mvn compile exec:java \
                   --inputPath=gs://onboarding-bucket-1/avro_dataset.avro"
 
 gcBucket, dataset, bqTable, inputPath are send as a runtime arguments to let job be configured using template in GC Dataflow.
+
+BigQueryAvroUtils.java is an util class which was discovered from one of several custom templates from google cloud doc.
+This is to support converting data types from avro to BiqQuery table's types.
