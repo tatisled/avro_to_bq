@@ -1,0 +1,17 @@
+Application to put data from avro dataset in google cloud storage bucket to Big Query table.
+
+to run template use following command:
+mvn compile exec:java \
+     -Dexec.mainClass=com.github.tatisled.AvroToBq \
+     -Dexec.args="--runner=DataflowRunner \
+                  --project=graphite-hook-314808 \
+                  --stagingLocation=gs://onboarding-bucket-1/staging \
+                  --templateLocation=gs://onboarding-bucket-1/custom_templates/new_template_from_maven.json \
+                  --region=us-central1 \
+                  --appName=AvroToBQ \
+                  --gcBucket=gs://onboarding-bucket-1 \
+                  --dataset=bq_dataset \
+                  --bqTable=bq_table_job-ext-args \
+                  --inputPath=gs://onboarding-bucket-1/avro_dataset.avro"
+
+gcBucket, dataset, bqTable, inputPath are send as a runtime arguments to let job be configured using template in GC Dataflow.
