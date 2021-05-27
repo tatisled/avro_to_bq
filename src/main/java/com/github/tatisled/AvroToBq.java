@@ -19,28 +19,13 @@ public class AvroToBq {
 
     private static final Logger LOG = LoggerFactory.getLogger(AvroToBq.class);
 
-    public interface AvroToBqOptions extends PipelineOptions, DataflowPipelineOptions {
-        @Description("Google cloud bucket url")
-        @Validation.Required
-        @SuppressWarnings("unused")
-        ValueProvider<String> getGcBucket();
-
-        @SuppressWarnings("unused")
-        void setGcBucket(ValueProvider<String> path);
-
+    public interface AvroToBqOptions extends DataflowPipelineOptions {
         @Description("Input path")
         @Validation.Required
         ValueProvider<String> getInputPath();
 
         @SuppressWarnings("unused")
         void setInputPath(ValueProvider<String> path);
-
-        @Description("BigQuery Dataset")
-        @Validation.Required
-        ValueProvider<String> getDataset();
-
-        @SuppressWarnings("unused")
-        void setDataset(ValueProvider<String> dataset);
 
         @Description("BigQuery Table")
         @Validation.Required
@@ -52,20 +37,16 @@ public class AvroToBq {
     }
 
     public static void main(String[] args) {
-        PipelineOptionsFactory.register(AvroToBqOptions.class);
-
         AvroToBqOptions options =
                 PipelineOptionsFactory.fromArgs(args).withValidation().as(AvroToBqOptions.class);
 
+        TableSchema ts = BigQueryAvroUtils.getTableSchema(getAvroSchema());
         Pipeline pipeline = Pipeline.create(options);
 
-        String bqStr = String.format("%s:%s.%s", options.getProject(), options.getDataset().get(), options.getBqTable().get());
-        TableSchema ts = BigQueryAvroUtils.getTableSchema(getAvroSchema());
-
         pipeline.apply("Read Avro from DataStorage", AvroIO.readGenericRecords(getAvroSchema())
-                .from(options.getInputPath().get()))
+                .from(options.getInputPath()))
                 .apply("Write to BigQuery", BigQueryIO.<GenericRecord>write()
-                        .to(bqStr)
+                        .to(options.getBqTable())
                         .withSchema(ts)
                         .withWriteDisposition(WRITE_APPEND)
                         .withCreateDisposition(CREATE_IF_NEEDED)
@@ -75,14 +56,6 @@ public class AvroToBq {
                         ))
                 );
 
-        try {
-            pipeline.run().waitUntilFinish();
-        } catch (UnsupportedOperationException e) {
-            LOG.warn(String.format("Got an exception while creating job template {%s}. Link to follow exception's history {%s}",
-                    e.getMessage()
-                    , "https://issues.apache.org/jira/browse/BEAM-9337"));
-        } catch (Exception e) {
-            LOG.error(e.getMessage(), e);
-        }
+        pipeline.run();
     }
 }
